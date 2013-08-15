@@ -32,7 +32,7 @@ class Server(object):
         self.id = server['id']
         self.status = server['status']
         self.name = server['name']
-        self.host = server['host']
+        self.host = server['hostId']
 
     @staticmethod
     def list_from_account_server_list(servers):
