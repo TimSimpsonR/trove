@@ -22,6 +22,9 @@ import eventlet
 from trove.openstack.common.rpc.impl_fake import cast
 from trove.openstack.common.rpc.impl_fake import create_connection
 
+# from oslo.messaging._drivers.impl_fake import cast
+# from oslo.messaging._drivers.impl_fake import create_connection
+
 
 original_cast = cast
 

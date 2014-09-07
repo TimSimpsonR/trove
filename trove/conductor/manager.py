@@ -22,13 +22,17 @@ from trove.instance import models as t_models
 from trove.openstack.common import log as logging
 from trove.openstack.common import periodic_task
 from trove.openstack.common.gettextutils import _
+from oslo import messaging
 
 LOG = logging.getLogger(__name__)
-RPC_API_VERSION = "1.0"
 CONF = cfg.CONF
 
 
 class Manager(periodic_task.PeriodicTasks):
+
+    RPC_API_VERSION = "3.0"
+
+    target = messaging.Target(version=RPC_API_VERSION)
 
     def __init__(self):
         super(Manager, self).__init__()

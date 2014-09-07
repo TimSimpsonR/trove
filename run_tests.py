@@ -23,12 +23,13 @@ import sys
 import traceback
 
 from trove.common import cfg
+from trove.common.rpc import service as rpc_service
 from trove.openstack.common import log as logging
 from trove.tests.config import CONFIG
+from trove import rpc
 from wsgi_intercept.httplib2_intercept import install as wsgi_install
 import proboscis
 import wsgi_intercept
-from trove.openstack.common.rpc import service as rpc_service
 
 import eventlet
 eventlet.monkey_patch(thread=False)
@@ -60,11 +61,11 @@ def initialize_trove(config_file):
              default_config_files=[config_file])
     logging.setup(None)
     topic = CONF.taskmanager_queue
+    rpc.init(CONF)
 
-    from trove.taskmanager import manager
-    manager_impl = manager.Manager()
-    taskman_service = rpc_service.Service(None, topic=topic,
-                                          manager=manager_impl)
+    taskman_service = rpc_service.RpcService(None, topic=topic,
+                                             manager='trove.taskmanager.'
+                                                     'manager.Manager')
     taskman_service.start()
 
     return pastedeploy.paste_deploy_app(config_file, 'trove', {})

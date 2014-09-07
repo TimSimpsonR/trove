@@ -17,7 +17,7 @@
 
 import trove
 from oslo.config import cfg
-
+from trove import rpc
 import os.path
 
 UNKNOWN_SERVICE_ID = 'unknown-service-id-error'
@@ -560,6 +560,24 @@ postgresql_opts = [
     cfg.ListOpt('ignore_dbs', default=['postgres']),
 ]
 
+# RPC version groups
+upgrade_levels = cfg.OptGroup(
+    'upgrade_levels',
+    title='RPC upgrade levels group for handling versions',
+    help='Contains the support version caps for each RPC API')
+
+rpcapi_cap_opts = [
+    cfg.StrOpt(
+        'taskmanager', default="icehouse",
+        help='Set a version cap for messages sent to taskmanager services'),
+    cfg.StrOpt(
+        'guestagent', default="icehouse",
+        help='Set a version cap for messages sent to guestagent services'),
+    cfg.StrOpt(
+        'conductor', default="icehouse",
+        help='Set a version cap for messages sent to conductor services'),
+]
+
 CONF = cfg.CONF
 
 CONF.register_opts(path_opts)
@@ -579,6 +597,10 @@ CONF.register_opts(cassandra_opts, cassandra_group)
 CONF.register_opts(couchbase_opts, couchbase_group)
 CONF.register_opts(mongodb_opts, mongodb_group)
 CONF.register_opts(postgresql_opts, postgresql_group)
+
+CONF.register_opts(rpcapi_cap_opts, upgrade_levels)
+
+rpc.init(CONF)
 
 
 def custom_parser(parsername, parser):

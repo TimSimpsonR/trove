@@ -44,8 +44,8 @@ from trove.openstack.common import log as logging
 from trove.openstack.common import systemd
 from trove.openstack.common import threadgroup
 
-
-rpc = importutils.try_import('trove.openstack.common.rpc')
+# TODO(esp): We need to see what is in oslo for this class
+# rpc = importutils.try_import('trove.openstack.common.rpc')
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 

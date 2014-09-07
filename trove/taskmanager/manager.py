@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from oslo import messaging
 from trove.common.context import TroveContext
 
 import trove.extensions.mgmt.instances.models as mgmtmodels
@@ -25,11 +26,14 @@ from trove.taskmanager import models
 from trove.taskmanager.models import FreshInstanceTasks
 
 LOG = logging.getLogger(__name__)
-RPC_API_VERSION = "1.0"
 CONF = cfg.CONF
 
 
 class Manager(periodic_task.PeriodicTasks):
+
+    RPC_API_VERSION = "3.0"
+
+    target = messaging.Target(version=RPC_API_VERSION)
 
     def __init__(self):
         super(Manager, self).__init__()

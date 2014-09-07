@@ -30,7 +30,7 @@ from trove.instance.models import DBInstance
 from trove.instance.models import InstanceServiceStatus
 from trove.instance.tasks import InstanceTasks
 import trove.extensions.mgmt.instances.models as mgmtmodels
-from trove.openstack.common.notifier import api as notifier
+# from trove.openstack.common.notifier import api as notifier
 from trove.common import remote
 from trove.tests.util import test_config
 

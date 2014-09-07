@@ -1,4 +1,4 @@
-#    Copyright 2013 OpenStack Foundation
+#    Copyright 2014 OpenStack Foundation
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,49 +12,73 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
+from oslo import messaging
+from trove import rpc
 from trove.common import cfg
-from trove.openstack.common.rpc import proxy
 from trove.openstack.common import log as logging
 
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-RPC_API_VERSION = "1.0"
+RPC_API_VERSION = "3.0"
 
 
-class API(proxy.RpcProxy):
-    """API for interacting with trove conductor."""
+class API(object):
+    """API for interacting with trove conductor.
+
+    API version history:
+
+        3.0 - Initial version.  (We started keeping track at icehouse-3)
+        3.1 - ...
+        3.2 - ...
+
+    """
+
+    VERSION_ALIASES = {
+        'icehouse': '3.0'
+    }
 
     def __init__(self, context):
         self.context = context
-        super(API, self).__init__(self._get_routing_key(), RPC_API_VERSION)
+        super(API, self).__init__()
 
-    def _get_routing_key(self):
-        """Create the routing key for conductor."""
-        return CONF.conductor_queue
+        target = messaging.Target(topic=CONF.conductor_queue,
+                                  version=RPC_API_VERSION)
+
+        version_cap = self.VERSION_ALIASES.get(CONF.upgrade_levels.conductor)
+        self.client = self.get_client(target, version_cap)
+
+    def get_client(self, target, version_cap, serializer=None):
+        return rpc.get_client(target,
+                              version_cap=version_cap,
+                              serializer=serializer)
 
     def heartbeat(self, instance_id, payload, sent=None):
         LOG.debug("Making async call to cast heartbeat for instance: %s"
                   % instance_id)
-        self.cast(self.context, self.make_msg("heartbeat",
-                                              instance_id=instance_id,
-                                              sent=sent,
-                                              payload=payload))
+
+        cctxt = self.client.prepare(version='3.0')
+        cctxt.cast(self.context, "heartbeat",
+                   instance_id=instance_id,
+                   sent=sent,
+                   payload=payload)
 
     def update_backup(self, instance_id, backup_id, sent=None,
                       **backup_fields):
         LOG.debug("Making async call to cast update_backup for instance: %s"
                   % instance_id)
-        self.cast(self.context, self.make_msg("update_backup",
-                                              instance_id=instance_id,
-                                              backup_id=backup_id,
-                                              sent=sent,
-                                              **backup_fields))
+
+        cctxt = self.client.prepare(version='3.0')
+        cctxt.cast(self.context, "update_backup",
+                   instance_id=instance_id,
+                   backup_id=backup_id,
+                   sent=sent,
+                   **backup_fields)
 
     def report_root(self, instance_id, user):
         LOG.debug("Making async call to cast report_root for instance: %s"
                   % instance_id)
-        self.cast(self.context, self.make_msg("report_root",
-                                              instance_id=instance_id,
-                                              user=user))
+        cctxt = self.client.prepare(version='3.0')
+        cctxt.cast(self.context, "report_root",
+                   instance_id=instance_id,
+                   user=user)

@@ -17,6 +17,7 @@
 #
 
 import os
+from oslo import messaging
 from trove.common import cfg
 from trove.common import exception
 from trove.common import instance as rd_instance
@@ -42,6 +43,10 @@ REPLICATION_STRATEGY_CLASS = get_replication_strategy(REPLICATION_STRATEGY,
 
 
 class Manager(periodic_task.PeriodicTasks):
+
+    RPC_API_VERSION = "3.0"
+
+    target = messaging.Target(version=RPC_API_VERSION)
 
     @periodic_task.periodic_task(ticks_between_runs=3)
     def update_status(self, context):

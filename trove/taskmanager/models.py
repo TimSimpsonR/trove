@@ -61,7 +61,10 @@ from trove.instance.models import InstanceStatus
 from trove.instance.models import InstanceServiceStatus
 from trove.openstack.common import log as logging
 from trove.openstack.common.gettextutils import _
-from trove.openstack.common.notifier import api as notifier
+
+#from trove.openstack.common.notifier import api as notifier
+from trove import rpc
+
 from trove.openstack.common import timeutils
 from trove.quota.quota import run_with_quotas
 import trove.common.remote as remote
@@ -140,8 +143,11 @@ class NotifyMixin(object):
         payload.update(kwargs)
         LOG.debug('Sending event: %(event_type)s, %(payload)s' %
                   {'event_type': event_type, 'payload': payload})
-        notifier.notify(self.context, publisher_id, event_type, 'INFO',
-                        payload)
+
+        notifier = rpc.get_notifier(
+            service="taskmanager", publisher_id=publisher_id)
+
+        notifier.info(self.context, event_type, payload)
 
 
 class ConfigurationMixin(object):
