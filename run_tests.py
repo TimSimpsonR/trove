@@ -132,6 +132,8 @@ def initialize_fakes(app):
                                       wsgi_interceptor)
     from trove.tests.util import event_simulator
     event_simulator.monkey_patch()
+    from trove.tests.fakes import taskmanager
+    taskmanager.monkey_patch()
 
 
 def parse_args_for_test_config():
