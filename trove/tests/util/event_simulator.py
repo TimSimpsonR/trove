@@ -20,16 +20,96 @@
 Simulates time itself to make the fake mode tests run even faster.
 """
 
+from collections import dequeu
 from proboscis.asserts import fail
 from trove.openstack.common import log as logging
 from trove.common import exception
 
+from eventlet import semaphore
 
 LOG = logging.getLogger(__name__)
 
 allowable_empty_sleeps = 0
 pending_events = []
 sleep_entrance_count = 0
+
+
+events_in_flight = 0
+
+real_methods = {}
+
+THREADS = {}
+sem = semaphore.Semaphore()
+
+class FakeThread(object):
+
+    def __init__(self):
+        self.id = real_methods['corolocal'].get_ident()
+        self.is_active = False
+        self.sleep_time = 0
+        THREADS[self.id] = self
+
+    def activate(self):
+        self.is_active = True
+        self.sleep_time = 0
+
+    def fix_times(self):
+        if self.sleep_time < 0:
+            self.sleep_time = 0
+
+    @staticmethod
+    def get(cls):
+        id = real_methods['corolocal'].get_ident()
+        return THREADS[id]
+
+    @property
+    def is_sleeping(self):
+        return self.sleep_time > 0
+
+    def pass_time(self, time):
+        if self.is_active:
+            return
+        self.sleep_time -= time
+
+    def sleep(self, time):
+        self.sleep_time = time
+
+
+THREAD_QUEUE = deque
+
+
+def prioritize(t):
+    THREAD_QUEUE.append(x)
+
+
+def fake_sleep(time):
+    my_thread = FakeThread.get()
+    my_thread.sleep(time)
+    real_methods['sleep']()
+
+
+def main_loop():
+    # Wait until all fake threads are inactive
+
+    for key, value in THREADS.values():
+        value.pass_time(time)
+    try:
+        first_to_run = min(THREAD_QUEUE, key=lamda t: t.sleep_time)
+        first_to_run.active()
+    except ValueError:
+        fail("Trying to sleep when no events are pending.")
+
+
+def launch_func(func):
+    global events_in_flight
+    events_in_flight += 1
+    if 'spawn' not in real_methods:
+        raise RuntimeError("Monkey patching not yet executed.")
+    def f():
+        func()
+        events_in_flight -= 1
+
+    real_methods['spawn'](f, 0)
 
 
 def event_simulator_spawn_after(time_from_now_in_seconds, func, *args, **kw):
@@ -88,10 +168,7 @@ def event_simulator_sleep(time_to_sleep):
                 # reentrant.
                 func = event["func"]
                 event["func"] = None
-                try:
-                    func()
-                except Exception:
-                    LOG.exception("Simulated event error.")
+                launch_func(func)
         time_to_sleep -= itr_sleep
     sleep_entrance_count -= 1
     if sleep_entrance_count < 1:
@@ -124,10 +201,17 @@ def monkey_patch():
     time.sleep = event_simulator_sleep
     import eventlet
     from eventlet import greenthread
+    real_methods = {
+        'sleep': eventlet.sleep,
+        'spawn': eventlet.spawn,
+        'corolocal': eventlet.corolocal
+    }
+
     eventlet.sleep = event_simulator_sleep
     greenthread.sleep = event_simulator_sleep
     eventlet.spawn_after = event_simulator_spawn_after
     eventlet.spawn_n = event_simulator_spawn
     eventlet.spawn = NotImplementedError
+
     from trove.common import utils
     utils.poll_until = fake_poll_until
