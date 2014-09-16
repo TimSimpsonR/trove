@@ -186,9 +186,18 @@ if __name__ == "__main__":
         from trove.tests.api.mgmt import instances_actions as mgmt_actions  # noqa
         from trove.tests.api.mgmt import storage  # noqa
         from trove.tests.api.mgmt import malformed_json  # noqa
+
+
+        def test_thread():
+            proboscis.TestProgram().run_and_exit()
+
+
+        from trove.tests.util import event_simulator
+        event_simulator.run_main(test_thread)
     except Exception as e:
         print("Run tests failed: %s" % e)
         traceback.print_exc()
         raise
 
-    proboscis.TestProgram().run_and_exit()
+
+
