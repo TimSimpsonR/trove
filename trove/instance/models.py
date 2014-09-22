@@ -750,6 +750,7 @@ class Instance(BuiltInstance):
                     datastore_version.manager) and not backup_id:
                 root_password = utils.generate_random_password()
 
+            print("\n\n\n\n\nYOOOO!!! I AM THEE MARIO\n\n\n\n")
             task_api.API(context).create_instance(db_info.id, name, flavor,
                                                   image_id, databases, users,
                                                   datastore_version.manager,

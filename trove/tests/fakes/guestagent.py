@@ -212,6 +212,7 @@ class FakeGuest(object):
         from trove.instance.models import DBInstance
         from trove.instance.models import InstanceServiceStatus
         from trove.guestagent.models import AgentHeartBeat
+        print("\n\n\nMARIO guest prepare\n\n")
         LOG.debug("users... %s" % users)
         LOG.debug("databases... %s" % databases)
         instance_name = DBInstance.find_by(id=self.id).name

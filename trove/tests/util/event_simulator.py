@@ -13,6 +13,8 @@ main_greenlet = None
 
 fake_threads = []
 
+
+
 def fake_sleep(time_to_sleep):
     # Do NOT let code call sleep if there's not an actual reason!
     # if not any_napping_threads():
@@ -23,6 +25,20 @@ def fake_sleep(time_to_sleep):
 
     main_greenlet.switch(time_to_sleep)
     print("MARIO I doth awaken")
+
+
+def fake_poll_until(retriever, condition=lambda value: value,
+                    sleep_time=1, time_out=None):
+    slept_time = 0
+    while True:
+        print("MARIO poll")
+        resource = retriever()
+        if condition(resource):
+            return resource
+        fake_sleep(sleep_time)
+        slept_time += sleep_time
+        if time_out and slept_time >= time_out:
+                raise exception.PollTimeOut()
 
 
 def run_main(func):
@@ -37,11 +53,13 @@ def run_main(func):
 
 
 def main_loop():
-    while True:
-        if len(fake_threads) > 0:
-            pulse(0.1)
-        else:
-            return
+    while len(fake_threads) > 0:
+        pulse(0.1)
+
+
+def fake_spawn_n(func, *args, **kw):
+    fake_spawn(0, func, *args, **kw)
+
 
 def fake_spawn(time_from_now_in_seconds, func, *args, **kw):
     """Fakes events without doing any actual waiting."""
@@ -99,7 +117,24 @@ def monkey_patch():
     eventlet.sleep = fake_sleep
     greenthread.sleep = fake_sleep
     eventlet.spawn_after = fake_spawn
-    #eventlet.spawn_n = event_simulator_spawn
-    eventlet.spawn = RuntimeError
+    def b():
+        raise RuntimeError("fgfdf")
+    eventlet.spawn_n = fake_spawn_n
+    eventlet.spawn = b
     print("HELL!")
+    from trove.common import utils
+    utils.poll_until = fake_poll_until
+    from eventlet.hubs import kqueue
+    class Err(object):
+        def __init__(self, *args, **kw):
+            raise RuntimeError("Fdg")
+    #kqueue.Hub = Err()
+
+
+import sys
+
+def _trace(frame, event, arg):
+    print("""MARIO %s %s """ % (frame.f_code.co_filename, frame.f_lineno))
+
+sys.settrace(_trace)
 
