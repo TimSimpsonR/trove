@@ -127,8 +127,6 @@ class HostsMgmtCommands(object):
 
     @test(depends_on=[test_index_host_list])
     def test_index_host_list_single(self):
-        from proboscis import SkipTest
-        raise SkipTest("MARIO")
         self.host.name = self.host.name.replace(".", "\.")
         result = self.client.hosts.get(self.host)
         assert_not_equal(result, None,

@@ -192,7 +192,7 @@ class DetachReplica(object):
         assert_equal(stdout, "0\n")
 
 
-@test(groups=[GROUP, 'MARIO'],
+@test(groups=[GROUP],
       depends_on=[WaitForCreateSlaveToFinish],
       runs_after=[DetachReplica])
 class DeleteSlaveInstance(object):
