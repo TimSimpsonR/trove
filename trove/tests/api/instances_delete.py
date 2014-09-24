@@ -32,6 +32,7 @@ from trove.tests.util import test_config
 from trove.tests.util.users import Requirements
 from trove.tests.api.instances import instance_info
 from trove.tests.api.instances import VOLUME_SUPPORT
+from trove.tests.util import event_simulator
 
 CONF = cfg.CONF
 
@@ -52,15 +53,23 @@ class TestBase(object):
                                              volume, [], [])
         return result.id
 
-    def wait_for_instance_status(self, instance_id, status="ACTIVE"):
+    def wait_for_instance_status(self, instance_id, status="ACTIVE",
+                                 acceptable_states=None):
+        if acceptable_states:
+            acceptable_states.append(status)
+        def assert_state(instance):
+            if acceptable_states:
+                assert_true(instance.status in acceptable_states,
+                            "Invalid status: %s" % instance.status)
+            return instance
         poll_until(lambda: self.dbaas.instances.get(instance_id),
-                   lambda instance: instance.status == status,
-                   time_out=3, sleep_time=1)
+                   lambda instance: assert_state(instance).status == status,
+                   time_out=30, sleep_time=1)
 
     def wait_for_instance_task_status(self, instance_id, description):
         poll_until(lambda: self.dbaas.management.show(instance_id),
                    lambda instance: instance.task_description == description,
-                   time_out=3, sleep_time=1)
+                   time_out=30, sleep_time=1)
 
     def is_instance_deleted(self, instance_id):
         while True:
@@ -139,8 +148,6 @@ class ErroredInstanceDelete(TestBase):
     @test
     @time_out(30)
     def delete_error_on_delete_instance(self):
-        from proboscis import SkipTest
-        raise SkipTest("MARIO")
         id = self.delete_error
         self.wait_for_instance_status(id, 'ACTIVE')
         self.wait_for_instance_task_status(id, 'No tasks for the instance.')

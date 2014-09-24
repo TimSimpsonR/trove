@@ -200,7 +200,6 @@ class DeleteSlaveInstance(object):
     @test
     @time_out(TIMEOUT_INSTANCE_DELETE)
     def test_delete_slave_instance(self):
-        raise SkipTest("MARIO")
         instance_info.dbaas.instances.delete(slave_instance.id)
         assert_equal(202, instance_info.dbaas.last_http_code)
 

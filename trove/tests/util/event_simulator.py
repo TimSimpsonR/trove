@@ -28,16 +28,12 @@ class Coroutine(object):
         def go():
             self.id = eventlet.corolocal.get_ident()
             started.send(True)
-            print("MARIO\t\t\t\t\t\t\t\tBIRTH %s" % self.id)
             self.my_sem.acquire(blocking=True, timeout=None)
             try:
-                print("MARIO\t\t\t\t\t\t\t\tSTART! %s" % self.id)
-                print("Running func %s" % func)
                 func(*args, **kwargs)
             # except Exception as e:
             #     print("Exception in coroutine! %s" % e)
             finally:
-                print("MARIO\t\t\t\t\t\t\t\tI AM DEAD! %s" % self.id)
                 self.dead = True
                 self.caller_sem.release()  # Relinquish control back to caller.
                 for i in range(len(self.ALL)):
@@ -47,7 +43,6 @@ class Coroutine(object):
 
         t = true_spawn(go)
         started.wait()
-        print("LOCAL id=%s" % self.id)
 
     @classmethod
     def get_current(cls):
@@ -56,7 +51,6 @@ class Coroutine(object):
     @classmethod
     def get_by_id(cls, id):
         for cr in cls.ALL:
-            print("MARIO searching for id, could it be %s?" % cr.id)
             if cr.id == id:
                 return cr
         raise RuntimeError("Coroutine with id %s not found!" % id)
@@ -64,9 +58,7 @@ class Coroutine(object):
     def sleep(self):
         # Only call this from it's own thread.
         assert eventlet.corolocal.get_ident() == self.id
-        print("MARIO\t\t\t\t\t\t\t\tNAP %s!" % self.id)
         self.caller_sem.release()  # Relinquish control back to caller.
-        print("MARIO\t\t\t\t\t\t\t\tAWAKE %s!" % self.id)
         self.my_sem.acquire(blocking=True, timeout=None)
 
     def run(self):
@@ -91,13 +83,22 @@ allowable_empty_sleeps = 1
 sleep_allowance = allowable_empty_sleeps
 
 
+def other_threads_are_active():
+    """Returns True if concurrent activity is being simulated.
+
+    Specifically, this means there is a fake thread in action other than the
+    "pulse" thread and the main test thread.
+    """
+    return len(fake_threads) >= 2
+
+
 def fake_sleep(time_to_sleep):
     # Do NOT let code call sleep if there's not an actual reason!
     # if not any_napping_threads():
     #     raise RuntimeError("Trying to sleep but there is nothing to wait for!")
     global sleep_allowance
     sleep_allowance -= 1
-    if len(fake_threads) < 2:  # The main "pulse" thread, plus this thread = 2
+    if not other_threads_are_active():  # The main "pulse" thread, plus this thread = 2
         if sleep_allowance < -1:
             raise RuntimeError("Sleeping for no reason.")
         else:
@@ -105,14 +106,11 @@ def fake_sleep(time_to_sleep):
     sleep_allowance = allowable_empty_sleeps
 
     cr = Coroutine.get_current()
-    print("MARIO I SLEEP!")
-    print("      zzzz < %s" % cr.id)
     for ft in fake_threads:
         if ft['greenlet'].id == cr.id:
             ft['next_sleep_time'] = time_to_sleep
 
     cr.sleep()
-    print("MARIO I doth awaken")
 
 
 def fake_poll_until(retriever, condition=lambda value: value,
@@ -120,7 +118,6 @@ def fake_poll_until(retriever, condition=lambda value: value,
     from trove.common import exception
     slept_time = 0
     while True:
-        print("MARIO poll")
         resource = retriever()
         if condition(resource):
             return resource
@@ -132,13 +129,9 @@ def fake_poll_until(retriever, condition=lambda value: value,
 
 def run_main(func):
     global main_greenlet
-    print("MARIO HI")
     main_greenlet = Coroutine(main_loop)
-    print("MARIO HI 2")
     fake_spawn(0, func)
-    print("MARIO HI 3")
     main_greenlet.run()
-    print("HA HA")
 
 
 def main_loop():
@@ -154,11 +147,9 @@ def fake_spawn(time_from_now_in_seconds, func, *args, **kw):
     """Fakes events without doing any actual waiting."""
     def thread_start():
         #fake_sleep(time_from_now_in_seconds)
-        print("MARIO Running %s" % func)
         return func(*args, **kw)
 
     cr = Coroutine(thread_start)
-    print("MARIO, spawn, with sleep %d with func=%s" % (time_from_now_in_seconds, func))
     fake_threads.append({'sleep': time_from_now_in_seconds,
                          'greenlet': cr,
                          'name': str(func)})
@@ -178,32 +169,33 @@ def pulse(seconds):
             t = fake_threads[index]
             t['sleep'] -= seconds
             if t['sleep'] <= 0:
-                print("MARIO x?")
                 t['sleep'] = 0
-                print("SWITCH %s" % t['name'])
                 t['next_sleep_time'] = None
                 t['greenlet'].run()
                 sleep_time = t['next_sleep_time']
-                print("MARIO will sleep of %s" % sleep_time)
                 if sleep_time is None or isinstance(sleep_time, tuple):
-                    print("MARIO DIE!!")
                     del fake_threads[index]
                     index -= 1
                 else:
-                    print("MARIO adding sleep to %s of %s" % (t['name'], t['sleep']))
                     t['sleep'] = sleep_time
             index += 1
-    # except Exception as e:
-    #     print("HOLY HELL!")
-    #     print(e)
-    #     import sys
-    #     sys.abort()
 
 
+def wait_until_all_activity_stops():
+    """In fake mode, wait for all simulated events to chill out.
+
+    This can be useful in situations where you need simulated activity (such
+    as calls running in TaskManager) to "bleed out" and finish before running
+    another test.
+
+    """
+    if main_greenlet is None:
+        return
+    while other_threads_are_active():
+        fake_sleep(1)
 
 
 def monkey_patch():
-    print("HELL!")
     import time
     time.sleep = fake_sleep
     import eventlet
@@ -211,41 +203,14 @@ def monkey_patch():
     eventlet.sleep = fake_sleep
     greenthread.sleep = fake_sleep
     eventlet.spawn_after = fake_spawn
-    def b():
-        raise RuntimeError("fgfdf")
+    def raise_error():
+        raise RuntimeError("Illegal operation!")
     eventlet.spawn_n = fake_spawn_n
-    eventlet.spawn = b
-    print("HELL!")
+    eventlet.spawn = raise_error
     from trove.common import utils
     utils.poll_until = fake_poll_until
     from eventlet.hubs import kqueue
-    class Err(object):
-        def __init__(self, *args, **kw):
-            raise RuntimeError("Fdg")
-    #kqueue.Hub = Err()
-    # from trove.openstack.common.rpc import impl_fake
-    # def new_call(self, context, version, method, namespace, args, timeout):
-    #     ctxt = impl_fake.RpcContext.from_dict(context.to_dict())
-    #     rval = self.proxy.dispatch(context, version, method,
-    #                                namespace, **args)
-    #     res = []
-    #     # Caller might have called ctxt.reply() manually
-    #     for (reply, failure) in ctxt._response:
-    #         if failure:
-    #             raise failure[0], failure[1], failure[2]
-    #         res.append(reply)
-    #     # if ending not 'sent'...we might have more data to
-    #     # return from the function itself
-    #     if not ctxt._done:
-    #         if inspect.isgenerator(rval):
-    #             for val in rval:
-    #                 res.append(val)
-    #         else:
-    #             res.append(rval)
-    #     return res
 
-
-    # impl_fake.call = new_call
 
 import sys
 

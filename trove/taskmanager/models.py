@@ -205,7 +205,6 @@ class FreshInstanceTasks(FreshInstance, NotifyMixin, ConfigurationMixin):
                         backup_id, availability_zone, root_password, nics,
                         overrides, cluster_config):
 
-        print("\nn\n\n\n\IN THE TASK!")
         LOG.info(_("Creating instance %s.") % self.id)
         security_groups = None
 

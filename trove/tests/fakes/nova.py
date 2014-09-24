@@ -261,7 +261,6 @@ class FakeServers(object):
     def create(self, name, image_id, flavor_ref, files=None, userdata=None,
                block_device_mapping=None, volume=None, security_groups=None,
                availability_zone=None, nics=None, config_drive=False):
-        print("\n\n\n\nI AM CREATING\n\n\n\t\tA FAKE SERVER MARIO\n\n")
         id = "FAKE_%s" % uuid.uuid4()
         if volume:
             volume = self.volumes.create(volume['size'], volume['name'],
@@ -494,7 +493,6 @@ class FakeVolumes(object):
                 raise nova_exceptions.NotFound(404, "Bad permissions")
 
     def create(self, size, name=None, description=None, volume_type=None):
-        print("\n\n\n\nI AM CREATING\n\n\n\t\tA FAKE VOLUME MARIO\n\n")
         id = "FAKE_VOL_%s" % uuid.uuid4()
         volume = FakeVolume(self, self.context, id, size, name,
                             description, volume_type)
