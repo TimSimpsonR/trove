@@ -736,6 +736,9 @@ class FakeSecurityGroups(object):
         self.securityGroups[secGrp.get_id()] = secGrp
         return secGrp
 
+    def delete(self, group_id):
+        pass
+
     def list(self):
         pass
 

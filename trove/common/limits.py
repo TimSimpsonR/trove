@@ -371,10 +371,12 @@ class WsgiLimiter(object):
 
         delay, error = self._limiter.check_for_delay(verb, path, username)
 
-        if delay:
-            headers = {"X-Wait-Seconds": "%.2f" % delay}
-            return webob.exc.HTTPForbidden(headers=headers, explanation=error)
-        else:
+        # MARIO
+        # if True:if delay:
+        #     headers = {"X-Wait-Seconds": "%.2f" % delay}
+        #     return webob.exc.HTTPForbidden(headers=headers, explanation=error)
+        # else:
+        if True:
             return webob.exc.HTTPNoContent()
 
 

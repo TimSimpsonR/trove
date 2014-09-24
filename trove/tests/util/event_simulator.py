@@ -87,7 +87,8 @@ main_greenlet = None
 fake_threads = []
 
 
-sleep_allowance = 1
+allowable_empty_sleeps = 1
+sleep_allowance = allowable_empty_sleeps
 
 
 def fake_sleep(time_to_sleep):
@@ -101,7 +102,7 @@ def fake_sleep(time_to_sleep):
             raise RuntimeError("Sleeping for no reason.")
         else:
             return  # Forgive the thread for calling this for one time.
-    sleep_allowance = 1
+    sleep_allowance = allowable_empty_sleeps
 
     cr = Coroutine.get_current()
     print("MARIO I SLEEP!")
@@ -116,6 +117,7 @@ def fake_sleep(time_to_sleep):
 
 def fake_poll_until(retriever, condition=lambda value: value,
                     sleep_time=1, time_out=None):
+    from trove.common import exception
     slept_time = 0
     while True:
         print("MARIO poll")
@@ -172,11 +174,8 @@ def any_napping_threads():
 def pulse(seconds):
     if True: # try:
         index = 0
-        print("MARIO pulse!")
         while index < len(fake_threads):
-            print("MARIO loopin' %s out of %s" % (index, len(fake_threads)))
             t = fake_threads[index]
-            print("MARIO loopin'   %s" % t['greenlet'].id)
             t['sleep'] -= seconds
             if t['sleep'] <= 0:
                 print("MARIO x?")
