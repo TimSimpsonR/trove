@@ -34,6 +34,7 @@ import eventlet
 eventlet.monkey_patch(thread=False)
 
 CONF = cfg.CONF
+original_excepthook = sys.excepthook
 
 
 def add_support_for_localization():
@@ -134,13 +135,20 @@ def initialize_fakes(app):
 
 
 def parse_args_for_test_config():
+    test_conf = 'etc/tests/localhost.test.conf'
+    repl = False
+    new_argv = []
     for index in range(len(sys.argv)):
         arg = sys.argv[index]
         print(arg)
         if arg[:14] == "--test-config=":
-            del sys.argv[index]
-            return arg[14:]
-    return 'etc/tests/localhost.test.conf'
+            test_conf = arg[14:]
+        elif arg == "--repl":
+            repl = True
+        else:
+            new_argv.append(arg)
+    sys.argv = new_argv
+    return test_conf, repl
 
 if __name__ == "__main__":
     try:
@@ -158,7 +166,7 @@ if __name__ == "__main__":
         initialize_fakes(app)
 
         # Initialize the test configuration.
-        test_config_file = parse_args_for_test_config()
+        test_config_file, repl = parse_args_for_test_config()
         CONFIG.load_from_file(test_config_file)
 
         # F401 unused imports needed for tox tests
@@ -186,9 +194,29 @@ if __name__ == "__main__":
         from trove.tests.api.mgmt import instances_actions as mgmt_actions  # noqa
         from trove.tests.api.mgmt import storage  # noqa
         from trove.tests.api.mgmt import malformed_json  # noqa
+
+        def test_thread():
+            def no_thanks(exit_code):
+                print("Tests finished with exit code %d." % exit_code)
+            if repl:
+                sys.exit = no_thanks
+
+            proboscis.TestProgram().run_and_exit()
+
+            if repl:
+                import code
+                code.interact()
+
+        if repl:
+            # Actually show errors in the repl.
+            sys.excepthook = original_excepthook
+
+        from trove.tests.fakes import taskmanager
+        taskmanager.monkey_patch()
+        from trove.tests.util import event_simulator
+        event_simulator.run_main(test_thread)
+
     except Exception as e:
         print("Run tests failed: %s" % e)
         traceback.print_exc()
         raise
-
-    proboscis.TestProgram().run_and_exit()
