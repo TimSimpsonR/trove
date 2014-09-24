@@ -58,6 +58,7 @@ class Consumer(object):
         self.proxy = proxy
 
     def call(self, context, version, method, namespace, args, timeout):
+        raise RuntimeError("MARIO I HATE YOU! I HATE YOU!")
         done = eventlet.event.Event()
 
         def _inner():
@@ -163,6 +164,7 @@ def call(conf, context, topic, msg, timeout=None):
 
 
 def cast(conf, context, topic, msg):
+    raise RuntimeError("MARIO I HATE YOU!!!")
     check_serialize(msg)
     try:
         call(conf, context, topic, msg)

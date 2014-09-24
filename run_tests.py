@@ -191,9 +191,11 @@ if __name__ == "__main__":
         def test_thread():
             proboscis.TestProgram().run_and_exit()
 
-
+        from trove.tests.fakes import taskmanager
+        taskmanager.monkey_patch()
         from trove.tests.util import event_simulator
         event_simulator.run_main(test_thread)
+
     except Exception as e:
         print("Run tests failed: %s" % e)
         traceback.print_exc()
