@@ -2,27 +2,27 @@
     "instance": {
         "databases": [
             {
-                "character_set": "utf8",
-                "collate": "utf8_general_ci",
+                "character_set": "utf8", 
+                "collate": "utf8_general_ci", 
                 "name": "sampledb"
-            },
+            }, 
             {
                 "name": "nextround"
             }
-        ],
-        "flavorRef": 1,
-        "name": "json_rack_instance",
+        ], 
+        "flavorRef": 1, 
+        "name": "json_rack_instance", 
         "users": [
             {
                 "databases": [
                     {
                         "name": "sampledb"
                     }
-                ],
-                "name": "demouser",
+                ], 
+                "name": "demouser", 
                 "password": "demopassword"
             }
-        ],
+        ], 
         "volume": {
             "size": 2
         }

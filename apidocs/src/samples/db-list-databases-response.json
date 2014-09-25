@@ -2,16 +2,16 @@
     "databases": [
         {
             "name": "anotherdb"
-        },
+        }, 
         {
             "name": "nextround"
-        },
+        }, 
         {
             "name": "oneMoreDB"
-        },
+        }, 
         {
             "name": "sampledb"
-        },
+        }, 
         {
             "name": "testingdb"
         }
