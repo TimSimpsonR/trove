@@ -1,24 +1,30 @@
 {
     "links": [
         {
-            "href": "https://ord.databases.api.rackspacecloud.com/v1.0/1234/instances/44b277eb-39be-4921-be31-3d61b43651d7/users?marker=dbuser2&limit=2",
+            "href": "https://ord.databases.api.rackspacecloud.com/v1.0/1234/instances/38df0ac1-957c-4773-bf98-f5964799bca2/users?marker=dbuser2%2540%2525&limit=2", 
             "rel": "next"
         }
-    ],
+    ], 
     "users": [
         {
-            "databases": [],
+            "databases": [
+                {
+                    "name": "databaseA"
+                }
+            ], 
+            "host": "%", 
             "name": "dbuser1"
-        },
+        }, 
         {
             "databases": [
                 {
                     "name": "databaseB"
-                },
+                }, 
                 {
                     "name": "databaseC"
                 }
-            ],
+            ], 
+            "host": "%", 
             "name": "dbuser2"
         }
     ]

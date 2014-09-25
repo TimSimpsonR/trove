@@ -1,0 +1,41 @@
+{
+    "instance": {
+        "created": "2014-09-25T00:18:13", 
+        "datastore": {
+            "type": "mysql", 
+            "version": "5.5"
+        }, 
+        "flavor": {
+            "id": "3", 
+            "links": [
+                {
+                    "href": "https://ord.databases.api.rackspacecloud.com/v1.0/1234/flavors/3", 
+                    "rel": "self"
+                }, 
+                {
+                    "href": "https://ord.databases.api.rackspacecloud.com/flavors/3", 
+                    "rel": "bookmark"
+                }
+            ]
+        }, 
+        "hostname": "e09ad9a3f73309469cf1f43d11e79549caf9acf2.rackspaceclouddb.com", 
+        "id": "38df0ac1-957c-4773-bf98-f5964799bca2", 
+        "links": [
+            {
+                "href": "https://ord.databases.api.rackspacecloud.com/v1.0/1234/instances/38df0ac1-957c-4773-bf98-f5964799bca2", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://ord.databases.api.rackspacecloud.com/instances/38df0ac1-957c-4773-bf98-f5964799bca2", 
+                "rel": "bookmark"
+            }
+        ], 
+        "name": "json_rack_instance", 
+        "status": "SHUTDOWN", 
+        "updated": "2014-09-25T00:18:17", 
+        "volume": {
+            "size": 4, 
+            "used": 0.16
+        }
+    }
+}
