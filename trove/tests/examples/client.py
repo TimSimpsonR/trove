@@ -62,9 +62,9 @@ def shorten_url(url):
 
 class SnippetWriter(object):
 
-    def __init__(self, conf, resources):
+    def __init__(self, conf, get_replace_list):
         self.conf = conf
-        self.resources = resources
+        self.get_replace_list = get_replace_list
 
     def output_request(self, user_details, name, url, output_headers, body,
                        content_type, method, static_auth_token=True):
@@ -158,8 +158,12 @@ class SnippetWriter(object):
                 output = output.replace(pre_host_port, post_host)
             output = output.replace("fake_host", "hostname")
             output = output.replace("FAKE_", "")
-            for resource in self.resources:
-                output = output.replace(resource[0], resource[1])
+            print("\n\n")
+            for resource in self.get_replace_list():
+                print("REPLACING %s with %s" % (resource[0], resource[1]))
+                output = output.replace(str(resource[0]), str(resource[1]))
+            print("\n\n")
+
             file.write(output)
 
 
@@ -223,4 +227,8 @@ class JsonClient(TroveHTTPClient):
     def http_log(self, args, kwargs, resp, body):
         add_fake_response_headers(resp)
         self.pretty_log(args, kwargs, resp, body)
-        return write_to_snippet(self, args, kwargs, resp, body)
+
+        def write_snippet():
+            return write_to_snippet(self, args, kwargs, resp, body)
+
+        self.write_snippet = write_snippet

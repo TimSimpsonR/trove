@@ -128,7 +128,7 @@ def make_client(user):
     return client
 
 
-def write_snippet(replacements, client, name, url, method, status, reason, func,
+def write_snippet(get_replace_list, client, name, url, method, status, reason, func,
                   *func_args):
         """
         'name' is the name of the file, while 'url,' 'method,' 'status,'
@@ -137,12 +137,16 @@ def write_snippet(replacements, client, name, url, method, status, reason, func,
         is passed as the *args to the two invocations of "func".
         """
         func_args = func_args or []
-        snippet_writer = SnippetWriter(conf, replacements)
+        snippet_writer = SnippetWriter(conf, get_replace_list)
         results = []
         client.client.snippet_writer = snippet_writer
         client.client.name = name
         args = func_args
         result = func(client, *args)
+
+        # Now write the snippet (if this happens earlier we can't replace
+        # data such as the instance ID).
+        client.client.write_snippet()
         with Check() as check:
             check.equal(client.client.old_info['url'], url)
             check.equal(client.client.old_info['method'], method)
@@ -158,26 +162,71 @@ def write_snippet(replacements, client, name, url, method, status, reason, func,
 
 
 JSON_INDEX = 0
-
+REPLACEMENT_LIST = []
+actual_instance_info = None
+actual_instance_info_2 = None
 
 class Example(object):
 
-    EXAMPLE_INSTANCE_ID = "44b277eb-39be-4921-be31-3d61b43651d7"
-    use_instance_id = None
+    EXAMPLE_BACKUP_INFO = {
+        'id': "a9832168-7541-4536-b8d9-a8a9b79cf1b4",
+        'created': "2014-09-25T00:18:15",
+        'updated': ['A', 'B']
+    }
+    EXAMPLE_INSTANCE_INFO = {
+        'id': "44b277eb-39be-4921-be31-3d61b43651d7",
+        'created': "2014-09-25T00:18:15",
+        'updated': ['A', 'B']
+    }
+    EXAMPLE_INSTANCE_INFO_2 = {
+        'id': "d5a9db64-7ef7-41c5-8e1e-4013166874bc",
+        'created': "2014-09-25T00:18:15",
+        'updated': ['A', 'B']
+    }
+    backup_info = None
 
-    @property
-    def replacements(self):
+    @classmethod
+    def get_replace_list(cls):
         replace = []
-        if self.use_instance_id:
-            replace.append((self.use_instance_id,
-                            self.EXAMPLE_INSTANCE_ID))
+        def add_resource_info(l, example_info, actual_info):
+            if actual_info:
+                l.append((actual_info['id'],
+                                example_info['id']))
+                l.append((actual_info['created'],
+                                example_info['created']))
+                l.append((
+                    actual_info['updated'],
+                    example_info['updated'][actual_info['update_count']]))
+
+        add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO,
+                          actual_instance_info)
+        add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO_2,
+                          actual_instance_info_2)
+        add_resource_info(replace, cls.EXAMPLE_BACKUP_INFO, cls.backup_info)
+
         return replace
 
-    def set_instance_id(self, id):
-        self.use_instance_id = id
+    @classmethod
+    def set_backup_id(cls, id, created_time, updated_time):
+        cls.backup_info = {'id':id, 'created': created_time,
+            'updated': updated_time, 'update_count': 0};
+
+    @classmethod
+    def set_instance_id(cls, id, created_time, updated_time):
+        global actual_instance_info
+        actual_instance_info = {'id':id, 'created': created_time,
+            'updated': updated_time, 'update_count': 0};
+
+    @classmethod
+    def set_instance_id_2(cls, id, created_time, updated_time):
+        global actual_instance_info_2
+        actual_instance_info_2 = {'id':id, 'created': created_time,
+            'updated': updated_time, 'update_count': 0};
+
 
     def snippet(self, *args, **kwargs):
-        return write_snippet(self.replacements, self.client, *args, **kwargs)
+        return write_snippet(self.get_replace_list, self.client,
+                             *args, **kwargs)
 
 
 @test(depends_on=[load_config_file], enabled=False)
@@ -262,7 +311,8 @@ class CreateInstance(Example):
                         "password": "demopassword"
                     }
                 ])
-            self.set_instance_id(instance.id)
+            self.set_instance_id(instance.id, instance.created,
+                                 instance.updated)
             assert_equal(instance.status, "BUILD")
             return instance
         self.instances = self.snippet(
@@ -764,12 +814,18 @@ class Backups(ActiveMixin):
 
     @test
     def create_backup(self):
+        def create_backup(client):
+            backup = client.backups.create(name='snapshot',
+                                           instance=json_instance.id,
+                                           description="My Backup")
+            with open("/tmp/mario", 'a') as f:
+                f.write("BACKUP = %s\n" % backup.id)
+            self.set_backup_id(backup.id, backup.created, backup.updated)
+            return backup
+
         results = self.snippet(
-            "backup_create",
-            "/backups", "POST", 202, "Accepted",
-            lambda client: client.backups.create(name='snapshot',
-                                                 instance=json_instance.id,
-                                                 description="My Backup"))
+            "backup_create", "/backups", "POST", 202, "Accepted",
+            create_backup)
         self._wait_for_active("BACKUP")
         assert_equal(len(results), 1)
         self.json_backup = results[JSON_INDEX]
@@ -808,6 +864,8 @@ class Backups(ActiveMixin):
                 volume={'size': 2},
                 restorePoint={'backupRef': backup})
             assert_equal(instance.status, "BUILD")
+            self.set_instance_id_2(instance.id, instance.created,
+                                   instance.updated)
             return instance
         results = self.snippet(
             "backup_restore",
