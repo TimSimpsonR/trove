@@ -2,9 +2,9 @@
     "host": {
         "instances": [
             {
-                "id": "38df0ac1-957c-4773-bf98-f5964799bca2", 
-                "name": "38df0ac1-957c-4773-bf98-f5964799bca2-lay", 
-                "server_id": "647a597c-df43-4ad1-a02b-aa9ac2b0cb28", 
+                "id": "44b277eb-39be-4921-be31-3d61b43651d7", 
+                "name": "44b277eb-39be-4921-be31-3d61b43651d7-lay", 
+                "server_id": "a3629bc4-4bd9-4f99-a818-bbb7e75e4d5b", 
                 "status": "ACTIVE", 
                 "tenant_id": "3000"
             }
