@@ -32,7 +32,7 @@
         ], 
         "name": "json_rack_instance", 
         "status": "ACTIVE", 
-        "updated": "2014-10-27T18:59:11", 
+        "updated": "2014-09-25T00:18:15", 
         "volume": {
             "size": 2, 
             "used": 0.16

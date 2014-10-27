@@ -38,7 +38,7 @@
                 "deleted": false, 
                 "deleted_at": null, 
                 "host": "hostname_1", 
-                "id": "a3629bc4-4bd9-4f99-a818-bbb7e75e4d5b", 
+                "id": "9559bd26-841c-4ce9-826c-106e22beb31e", 
                 "local_id": 0, 
                 "name": "44b277eb-39be-4921-be31-3d61b43651d7-lay", 
                 "status": "ACTIVE", 
@@ -48,7 +48,7 @@
             "status": "ACTIVE", 
             "task_description": "No tasks for the instance.", 
             "tenant_id": "3000", 
-            "updated": "2014-10-27T18:59:12", 
+            "updated": "2014-10-27T19:47:31", 
             "volume": {
                 "size": 4
             }

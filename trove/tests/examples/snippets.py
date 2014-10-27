@@ -163,8 +163,10 @@ def write_snippet(get_replace_list, client, name, url, method, status, reason, f
 
 JSON_INDEX = 0
 REPLACEMENT_LIST = []
+
 actual_instance_info = None
 actual_instance_info_2 = None
+actual_config_info = None
 
 class Example(object):
 
@@ -173,9 +175,13 @@ class Example(object):
         'created': "2014-09-25T00:18:15",
         'updated': ['A', 'B']
     }
+    EXAMPLE_CONFIG_INFO = {
+        'id': "43a6ea86-e959-4735-9e46-a6a5d4a2d80f",
+    }
     EXAMPLE_INSTANCE_INFO = {
         'id': "44b277eb-39be-4921-be31-3d61b43651d7",
         'created': "2014-09-25T00:18:15",
+        'nova_id': "a3629bc4-4bd9-4f99-a818-bbb7e75e4d5b",
         'updated': ['A', 'B']
     }
     EXAMPLE_INSTANCE_INFO_2 = {
@@ -188,16 +194,15 @@ class Example(object):
     @classmethod
     def get_replace_list(cls):
         replace = []
+
         def add_resource_info(l, example_info, actual_info):
             if actual_info:
-                l.append((actual_info['id'],
-                                example_info['id']))
-                l.append((actual_info['created'],
-                                example_info['created']))
-                l.append((
-                    actual_info['updated'],
-                    example_info['updated'][actual_info['update_count']]))
+                for key in ['created', 'id', 'nova_id', 'updated']:
+                    if key in actual_info:
+                        l.append((actual_info[key], example_info[key]))
 
+        add_resource_info(replace, cls.EXAMPLE_CONFIG_INFO,
+                          actual_config_info)
         add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO,
                           actual_instance_info)
         add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO_2,
@@ -212,10 +217,15 @@ class Example(object):
             'updated': updated_time, 'update_count': 0};
 
     @classmethod
-    def set_instance_id(cls, id, created_time, updated_time):
+    def set_config_info(cls, id):
+        global actual_config_info
+        actual_config_info = {'id':id}
+
+    @classmethod
+    def set_instance_id(cls, id, created_time, updated_time, nova_id):
         global actual_instance_info
         actual_instance_info = {'id':id, 'created': created_time,
-            'updated': updated_time, 'update_count': 0};
+            'updated': updated_time, 'update_count': 0, 'nova_id': nova_id};
 
     @classmethod
     def set_instance_id_2(cls, id, created_time, updated_time):
@@ -311,9 +321,21 @@ class CreateInstance(Example):
                         "password": "demopassword"
                     }
                 ])
-            self.set_instance_id(instance.id, instance.created,
-                                 instance.updated)
             assert_equal(instance.status, "BUILD")
+
+            # Figure out a bunch of GUIDs so we can replace them with stock
+            # ones and avoid cauing an unnecessary diff in the docs.
+
+            # Awkardly grab the Nova Server ID from the fake mode dictionary.
+            time.sleep(1)  # Ensure the fake instance's server is fake created.
+            from trove.tests.fakes.nova import FAKE_SERVERS_DB
+            nova_id = None
+            for key in FAKE_SERVERS_DB:
+                nova_id = key
+
+            self.set_instance_id(instance.id, instance.created,
+                                 instance.updated, nova_id)
+
             return instance
         self.instances = self.snippet(
             "create_instance",
@@ -661,13 +683,18 @@ class Configurations(ActiveMixin):
             "connect_timeout": 120,
             "collation_server": "latin1_swedish_ci"
         }
+        def create(client):
+            config = client.configurations.create(
+                'example-configuration-name', json.dumps(values),
+                'example description', ds_id, ds_v_id)
+            self.set_config_info(config.id)
+            return config
+
         self.configurations = self.snippet(
             "configuration_create",
             "/configurations",
             "POST", 200, "OK",
-            lambda client: client.configurations.create(
-                'example-configuration-name', json.dumps(values),
-                'example description', ds_id, ds_v_id))
+            create)
         STATE["CONFIGURATION"] = self.configurations[JSON_INDEX]
 
     @test(depends_on=[create_configuration])
