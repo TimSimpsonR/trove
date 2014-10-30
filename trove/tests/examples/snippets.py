@@ -26,6 +26,37 @@ trove_client._logger.setLevel(logging.CRITICAL)
 
 print_req = True
 
+FAKE_INFO = { 'm':30, 's':0, 'uuid':'abcdef00-aaaa-aaaa-aaaa-bbbbbbbbbbbb' }
+EXAMPLE_BACKUP_ID = "a9832168-7541-4536-b8d9-a8a9b79cf1b4"
+EXAMPLE_CONFIG_ID = "43a6ea86-e959-4735-9e46-a6a5d4a2d80f"
+EXAMPLE_INSTANCE_ID = "44b277eb-39be-4921-be31-3d61b43651d7"
+EXAMPLE_INSTANCE_ID_2 = "d5a9db64-7ef7-41c5-8e1e-4013166874bc"
+
+
+def get_now():
+    from datetime import datetime
+    return datetime(2014, 10, 30, hour=12, minute=FAKE_INFO['m'],
+                    second=FAKE_INFO['s'])
+
+
+def get_uuid():
+    return FAKE_INFO['uuid']
+
+
+def set_fake_stuff(uuid=None, minute=None):
+    if uuid:
+        FAKE_INFO['uuid'] = uuid
+    if minute:
+        FAKE_INFO['minute'] = minute
+
+
+def monkey_patch_uuid_and_date():
+    import uuid
+    uuid.uuid4 = get_uuid
+    from trove.common import utils
+    utils.utcnow = get_now
+    utils.generate_uuid = get_uuid
+
 
 @test
 def load_config_file():
@@ -177,6 +208,10 @@ class Example(object):
     }
     EXAMPLE_CONFIG_INFO = {
         'id': "43a6ea86-e959-4735-9e46-a6a5d4a2d80f",
+        'created': "2014-09-25T00:18:15",
+        'updated': ["014-09-25T00:18:15", "B"],
+        'updated': ['A', 'B']
+        #'server_id': "280999259",
     }
     EXAMPLE_INSTANCE_INFO = {
         'id': "44b277eb-39be-4921-be31-3d61b43651d7",
@@ -197,17 +232,17 @@ class Example(object):
 
         def add_resource_info(l, example_info, actual_info):
             if actual_info:
-                for key in ['created', 'id', 'nova_id', 'updated']:
+                for key in ['created', 'id', 'nova_id', 'server_id', 'updated']:
                     if key in actual_info:
                         l.append((actual_info[key], example_info[key]))
 
-        add_resource_info(replace, cls.EXAMPLE_CONFIG_INFO,
-                          actual_config_info)
-        add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO,
-                          actual_instance_info)
-        add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO_2,
-                          actual_instance_info_2)
-        add_resource_info(replace, cls.EXAMPLE_BACKUP_INFO, cls.backup_info)
+        # add_resource_info(replace, cls.EXAMPLE_CONFIG_INFO,
+        #                   actual_config_info)
+        # add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO,
+        #                   actual_instance_info)
+        # add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO_2,
+        #                   actual_instance_info_2)
+        # add_resource_info(replace, cls.EXAMPLE_BACKUP_INFO, cls.backup_info)
 
         return replace
 
@@ -217,9 +252,10 @@ class Example(object):
             'updated': updated_time, 'update_count': 0};
 
     @classmethod
-    def set_config_info(cls, id):
+    def set_config_info(cls, id, created_time, updated_time):
         global actual_config_info
-        actual_config_info = {'id':id}
+        actual_config_info = {'id':id, 'created': created_time,
+                              'updated': updated_time}
 
     @classmethod
     def set_instance_id(cls, id, created_time, updated_time, nova_id):
@@ -300,6 +336,7 @@ class CreateInstance(Example):
 
     @test
     def post_create_instance(self):
+        set_fake_stuff(uuid=EXAMPLE_INSTANCE_ID)
         def create_instance(client, name):
             instance = client.instances.create(
                 name, 1,
@@ -677,6 +714,7 @@ class Configurations(ActiveMixin):
 
     @test(depends_on=[get_configuration_parameter_without_datastore_version])
     def create_configuration(self):
+        set_fake_stuff(uuid=EXAMPLE_CONFIG_ID)
         ds_id = STATE["DATASTORE_ID"]
         ds_v_id = STATE["DATASTORE_VERSION_ID"]
         values = {
@@ -687,7 +725,7 @@ class Configurations(ActiveMixin):
             config = client.configurations.create(
                 'example-configuration-name', json.dumps(values),
                 'example description', ds_id, ds_v_id)
-            self.set_config_info(config.id)
+            self.set_config_info(config.id, config.created, config.updated)
             return config
 
         self.configurations = self.snippet(
@@ -841,13 +879,13 @@ class Backups(ActiveMixin):
 
     @test
     def create_backup(self):
+        set_fake_stuff(uuid=EXAMPLE_BACKUP_ID)
         def create_backup(client):
             backup = client.backups.create(name='snapshot',
                                            instance=json_instance.id,
                                            description="My Backup")
             with open("/tmp/mario", 'a') as f:
                 f.write("BACKUP = %s\n" % backup.id)
-            self.set_backup_id(backup.id, backup.created, backup.updated)
             return backup
 
         results = self.snippet(
@@ -885,14 +923,13 @@ class Backups(ActiveMixin):
 
     @test(depends_on=[create_backup])
     def restore(self):
+        set_fake_stuff(uuid=EXAMPLE_INSTANCE_ID_2)
         def create_instance(client, name, backup):
             instance = client.instances.create(
                 name, 1,
                 volume={'size': 2},
                 restorePoint={'backupRef': backup})
             assert_equal(instance.status, "BUILD")
-            self.set_instance_id_2(instance.id, instance.created,
-                                   instance.updated)
             return instance
         results = self.snippet(
             "backup_restore",
