@@ -164,7 +164,8 @@ def parse_args_for_test_config():
             return arg[14:]
     return 'etc/tests/localhost.test.conf'
 
-if __name__ == "__main__":
+
+def run_super_fake_mode(import_test_function):
     try:
         wsgi_install()
         add_support_for_localization()
@@ -183,35 +184,44 @@ if __name__ == "__main__":
         test_config_file = parse_args_for_test_config()
         CONFIG.load_from_file(test_config_file)
 
-        # F401 unused imports needed for tox tests
-        from trove.tests.api import backups  # noqa
-        from trove.tests.api import header  # noqa
-        from trove.tests.api import limits  # noqa
-        from trove.tests.api import flavors  # noqa
-        from trove.tests.api import versions  # noqa
-        from trove.tests.api import instances as rd_instances  # noqa
-        from trove.tests.api import instances_actions as rd_actions  # noqa
-        from trove.tests.api import instances_delete  # noqa
-        from trove.tests.api import instances_mysql_down  # noqa
-        from trove.tests.api import instances_resize  # noqa
-        from trove.tests.api import configurations  # noqa
-        from trove.tests.api import databases  # noqa
-        from trove.tests.api import datastores  # noqa
-        from trove.tests.api import replication  # noqa
-        from trove.tests.api import root  # noqa
-        from trove.tests.api import root_on_create  # noqa
-        from trove.tests.api import users  # noqa
-        from trove.tests.api import user_access  # noqa
-        from trove.tests.api.mgmt import accounts  # noqa
-        from trove.tests.api.mgmt import admin_required  # noqa
-        from trove.tests.api.mgmt import hosts  # noqa
-        from trove.tests.api.mgmt import instances as mgmt_instances  # noqa
-        from trove.tests.api.mgmt import instances_actions as mgmt_actions  # noqa
-        from trove.tests.api.mgmt import storage  # noqa
-        from trove.tests.api.mgmt import malformed_json  # noqa
+        import_test_function()
     except Exception as e:
         print("Run tests failed: %s" % e)
         traceback.print_exc()
         raise
 
     proboscis.TestProgram().run_and_exit()
+
+
+def import_most_tests():
+    # F401 unused imports needed for tox tests
+    from trove.tests.api import backups  # noqa
+    from trove.tests.api import header  # noqa
+    from trove.tests.api import limits  # noqa
+    from trove.tests.api import flavors  # noqa
+    from trove.tests.api import versions  # noqa
+    from trove.tests.api import instances as rd_instances  # noqa
+    from trove.tests.api import instances_actions as rd_actions  # noqa
+    from trove.tests.api import instances_delete  # noqa
+    from trove.tests.api import instances_mysql_down  # noqa
+    from trove.tests.api import instances_resize  # noqa
+    from trove.tests.api import configurations  # noqa
+    from trove.tests.api import databases  # noqa
+    from trove.tests.api import datastores  # noqa
+    from trove.tests.api import replication  # noqa
+    from trove.tests.api import root  # noqa
+    from trove.tests.api import root_on_create  # noqa
+    from trove.tests.api import users  # noqa
+    from trove.tests.api import user_access  # noqa
+    from trove.tests.api.mgmt import accounts  # noqa
+    from trove.tests.api.mgmt import admin_required  # noqa
+    from trove.tests.api.mgmt import hosts  # noqa
+    from trove.tests.api.mgmt import instances as mgmt_instances  # noqa
+    from trove.tests.api.mgmt import instances_actions as mgmt_actions  # noqa
+    from trove.tests.api.mgmt import storage  # noqa
+    from trove.tests.api.mgmt import malformed_json  # noqa
+
+
+if __name__ == "__main__":
+    run_super_fake_mode(import_most_tests)
+
