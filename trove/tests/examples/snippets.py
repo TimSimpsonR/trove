@@ -24,14 +24,12 @@ from trove.tests.examples.client import JsonClient
 
 trove_client._logger.setLevel(logging.CRITICAL)
 
-print_req = True
-
 FAKE_INFO = { 'm':30, 's':0, 'uuid':'abcdef00-aaaa-aaaa-aaaa-bbbbbbbbbbbb' }
 EXAMPLE_BACKUP_ID = "a9832168-7541-4536-b8d9-a8a9b79cf1b4"
 EXAMPLE_CONFIG_ID = "43a6ea86-e959-4735-9e46-a6a5d4a2d80f"
 EXAMPLE_INSTANCE_ID = "44b277eb-39be-4921-be31-3d61b43651d7"
 EXAMPLE_INSTANCE_ID_2 = "d5a9db64-7ef7-41c5-8e1e-4013166874bc"
-
+EXAMPLE_CONFIG_SERVER_ID = "271898715"
 
 def get_now():
     from datetime import datetime
@@ -200,49 +198,12 @@ def write_snippet(get_replace_list, client, name, url, method, status, reason, f
 
 
 JSON_INDEX = 0
-REPLACEMENT_LIST = []
-
-actual_instance_info = None
-actual_instance_info_2 = None
-actual_config_info = None
 
 class Example(object):
 
-    EXAMPLE_BACKUP_INFO = {
-        'id': "a9832168-7541-4536-b8d9-a8a9b79cf1b4",
-        'created': "2014-09-25T00:18:15",
-        'updated': ['A', 'B']
-    }
-    EXAMPLE_CONFIG_INFO = {
-        'id': "43a6ea86-e959-4735-9e46-a6a5d4a2d80f",
-        'created': "2014-09-25T00:18:15",
-        'updated': ["014-09-25T00:18:15", "B"],
-        'updated': ['A', 'B']
-        #'server_id': "280999259",
-    }
-    EXAMPLE_INSTANCE_INFO = {
-        'id': "44b277eb-39be-4921-be31-3d61b43651d7",
-        'created': "2014-09-25T00:18:15",
-        'nova_id': "a3629bc4-4bd9-4f99-a818-bbb7e75e4d5b",
-        'updated': ['A', 'B']
-    }
-    EXAMPLE_INSTANCE_INFO_2 = {
-        'id': "d5a9db64-7ef7-41c5-8e1e-4013166874bc",
-        'created': "2014-09-25T00:18:15",
-        'updated': ['A', 'B']
-    }
-    backup_info = None
-
     @classmethod
     def get_replace_list(cls):
-        replace = []
-
-        def add_resource_info(l, example_info, actual_info):
-            if actual_info:
-                for key in ['created', 'id', 'nova_id', 'server_id', 'updated']:
-                    if key in actual_info:
-                        l.append((actual_info[key], example_info[key]))
-        return replace
+        return []
 
     def snippet(self, *args, **kwargs):
         return write_snippet(self.get_replace_list, self.client,
@@ -815,7 +776,7 @@ class InstanceList(Example):
 
     @test
     def get_default_instance_configuration(self):
-        set_fake_stuff(unique_id="271898715")
+        set_fake_stuff(unique_id=EXAMPLE_CONFIG_SERVER_ID)
         self.snippet(
             "get_default_instance_configuration",
             "/instances/%s/configuration" % json_instance.id,

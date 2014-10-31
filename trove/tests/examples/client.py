@@ -15,41 +15,6 @@ from trove.openstack.common.processutils import ProcessExecutionError
 print_req = True
 
 
-class ConfigFile(object):
-
-    def __init__(self):
-        file_contents = open(config_file, "r").read()
-        try:
-            config = json.loads(file_contents)
-        except Exception as exception:
-            msg = 'Error loading config file "%s".' % config_file
-            raise RuntimeError(msg, exception)
-
-        self.directory = config.get("directory", None)
-        if not self.directory.endswith('/'):
-            self.directory += '/'
-        self.api_url = config.get("api_url", None)
-        self.auth_url = config.get("auth_url", None)
-        self.username = config.get("username", None)
-        self.password = config.get("password", None)
-        self.tenant = config.get("tenant", None)
-        self.replace_host = config.get("replace_host", None)
-        self.replace_dns_hostname = config.get("replace_dns_hostname", None)
-        if self.auth_url:
-            auth_id, tenant_id = self.get_auth_token_id_tenant_id(
-                self.auth_url, self.username, self.password)
-        else:
-            auth_id = self.tenant
-            tenant_id = self.tenant
-
-        print "id = %s" % auth_id
-        self.headers = {
-            'X-Auth-Token': str(auth_id)
-        }
-        print "tenantID = %s" % tenant_id
-        self.tenantID = tenant_id
-        self.dbaas_url = "%s/v1.0/%s" % (self.api_url, self.tenantID)
-
 
 def shorten_url(url):
     parsed = urlparse(url)
