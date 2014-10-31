@@ -43,11 +43,18 @@ def get_uuid():
     return FAKE_INFO['uuid']
 
 
-def set_fake_stuff(uuid=None, minute=None):
+def set_fake_stuff(uuid=None, minute=None, unique_id=None):
     if uuid:
         FAKE_INFO['uuid'] = uuid
     if minute:
         FAKE_INFO['minute'] = minute
+    if unique_id:
+        from trove.common.template import SingleInstanceConfigTemplate
+        def fake_calc_id(self):
+            return unique_id
+
+        SingleInstanceConfigTemplate._calculate_unique_id = fake_calc_id
+
 
 
 def monkey_patch_uuid_and_date():
@@ -235,40 +242,7 @@ class Example(object):
                 for key in ['created', 'id', 'nova_id', 'server_id', 'updated']:
                     if key in actual_info:
                         l.append((actual_info[key], example_info[key]))
-
-        # add_resource_info(replace, cls.EXAMPLE_CONFIG_INFO,
-        #                   actual_config_info)
-        # add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO,
-        #                   actual_instance_info)
-        # add_resource_info(replace, cls.EXAMPLE_INSTANCE_INFO_2,
-        #                   actual_instance_info_2)
-        # add_resource_info(replace, cls.EXAMPLE_BACKUP_INFO, cls.backup_info)
-
         return replace
-
-    @classmethod
-    def set_backup_id(cls, id, created_time, updated_time):
-        cls.backup_info = {'id':id, 'created': created_time,
-            'updated': updated_time, 'update_count': 0};
-
-    @classmethod
-    def set_config_info(cls, id, created_time, updated_time):
-        global actual_config_info
-        actual_config_info = {'id':id, 'created': created_time,
-                              'updated': updated_time}
-
-    @classmethod
-    def set_instance_id(cls, id, created_time, updated_time, nova_id):
-        global actual_instance_info
-        actual_instance_info = {'id':id, 'created': created_time,
-            'updated': updated_time, 'update_count': 0, 'nova_id': nova_id};
-
-    @classmethod
-    def set_instance_id_2(cls, id, created_time, updated_time):
-        global actual_instance_info_2
-        actual_instance_info_2 = {'id':id, 'created': created_time,
-            'updated': updated_time, 'update_count': 0};
-
 
     def snippet(self, *args, **kwargs):
         return write_snippet(self.get_replace_list, self.client,
@@ -369,9 +343,6 @@ class CreateInstance(Example):
             nova_id = None
             for key in FAKE_SERVERS_DB:
                 nova_id = key
-
-            self.set_instance_id(instance.id, instance.created,
-                                 instance.updated, nova_id)
 
             return instance
         self.instances = self.snippet(
@@ -725,7 +696,6 @@ class Configurations(ActiveMixin):
             config = client.configurations.create(
                 'example-configuration-name', json.dumps(values),
                 'example description', ds_id, ds_v_id)
-            self.set_config_info(config.id, config.created, config.updated)
             return config
 
         self.configurations = self.snippet(
@@ -845,6 +815,7 @@ class InstanceList(Example):
 
     @test
     def get_default_instance_configuration(self):
+        set_fake_stuff(unique_id="271898715")
         self.snippet(
             "get_default_instance_configuration",
             "/instances/%s/configuration" % json_instance.id,
